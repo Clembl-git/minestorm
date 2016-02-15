@@ -1,14 +1,14 @@
+QT      +=  multimedia
 QMAKE_CXX   =   clang++
 QMAKE_CC    =   clang
 
-QT      +=  core gui network testlib
+QT      +=  core gui network multimedia
 
 CONFIG  +=  C++11
-CONFIG  +=  testcase
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = minestorm
+TARGET = multistorm
 TEMPLATE = app
 
 
@@ -25,8 +25,6 @@ SOURCES += server/Core.cpp \
     client/Client.cpp \
     server/Worker.cpp \
     shared/BaseSocket.cpp \
-    test/TestMessage.cpp \
-    shared/test.cpp \
     shared/MessageBase.cpp \
     shared/MessageMouse.cpp \
     shared/MessageObjects.cpp \
@@ -34,9 +32,15 @@ SOURCES += server/Core.cpp \
     shared/MessageKey.cpp \
     client/Element.cpp \
     client/Images.cpp \
-    shared/MessageInfo.cpp \
     server/Collision.cpp \
-    server/Projectile.cpp
+    server/Projectile.cpp \
+    server/Player.cpp \
+    server/Players.cpp \
+    client/PlayerInfos.cpp \
+    client/PlayersInfos.cpp \
+    shared/MessagePlayersInfos.cpp \
+    client/FpsCounter.cpp \
+    shared/MessagePseudo.cpp
 
 HEADERS  += server/Core.hh \
     client/Controller.hh \
@@ -51,18 +55,23 @@ HEADERS  += server/Core.hh \
     client/Client.hh \
     server/Worker.hh \
     shared/BaseSocket.hh \
-    test/TestMessage.hh \
     shared/MessageBase.hh \
     shared/MessageMouse.hh \
     shared/MessageObjects.hh \
-    shared/MessageFactory.hpp \
     server/CoreRunner.hh \
     shared/MessageKey.hh \
     client/Element.hh \
     client/Images.hh \
-    shared/MessageInfo.hh \
     server/Collision.hh \
-    server/Projectile.hh
+    server/Projectile.hh \
+    server/Player.hh \
+    server/Players.hh \
+    client/PlayerInfos.hh \
+    client/IDrawable.hh \
+    client/PlayersInfos.hh \
+    shared/MessagePlayersInfos.hh \
+    client/FpsCounter.hh \
+    shared/MessagePseudo.hh
 
 FORMS    +=
 

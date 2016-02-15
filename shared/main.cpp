@@ -12,16 +12,15 @@
 #include "Server.hh"
 #include "Client.hh"
 
-void        runTests();
-
 int main(int argc, char *argv[])
 {
     QString     arg(argv[1]);
 
+
     if (arg == "srv")
     {
         QApplication    a(argc, argv);
-        Core            *core = new Core;
+        Core            *core = new Core(CYCLE_PER_S);
 
         core->startGame();
 
@@ -30,7 +29,7 @@ int main(int argc, char *argv[])
     else
     {
         QApplication    a(argc, argv);
-        Display         display(QSize(SCREEN_SIZE, SCREEN_SIZE));
+        Display         display(QSize(SCREEN_WIDTH, SCREEN_HEIGHT));
         MainWindow      w(&display);
 
         return a.exec();

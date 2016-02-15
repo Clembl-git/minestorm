@@ -1,86 +1,106 @@
 #include "Collision.hh"
 
-Collision::Collision(EntityHash &entitiesMap)
+Collision::Collision(EntitiesHash &entitiesMap)
+    : _entitiesMap(entitiesMap)
 {
-    detectCollision(entitiesMap);
-    removeEntities(entitiesMap);
 }
 
-void Collision::detectCollision(EntityHash &entitiesMap)
+
+
+bool Collision::checkCollision(Entity &entity1, Entity &entity2)
 {
-    for(QSharedPointer<Entity> &entity : entitiesMap)
+    bool result = false;
+    for(QPointF &point: entity2)
     {
-        switch(entity->type())
+        bool collide = entity1.containsPoint(point, Qt::OddEvenFill);
+        DEBUG("Collision::detectShipCollision() collision vaisseau : " << collide, false);
+        if(collide)
         {
-            case Entity::SHIP:
+            result = true;
+
+            //Si l'entité n'est pas un vaisseau on la kill
+            if(entity2.type() != Entity::SHIP)
             {
-                Ship *ship = dynamic_cast<Ship*>(entity.data());
-                detectShipCollision(*ship, entitiesMap);
-                break;
+                entity2.setEtatDead();
             }
-            default:
-            {
-                break;
-            }
+            break;
         }
     }
+
+    return result;
 }
 
-void Collision::detectShipCollision(Ship &ship, EntityHash &entitiesMap)
+void Collision::detectShipCollision(QSharedPointer<Entity> &shipEntity)
 {
-    //Pour toutes les entités on regarde si il y a collision avec le vaisseau
-    for(QSharedPointer<Entity> &entity : entitiesMap)
+    Ship *ship = dynamic_cast<Ship*>(shipEntity.data());
+
+    if(ship->etat() == Entity::ALIVE)
     {
-        for(QPoint &point: *entity)
+        //Pour tous les vaisseau on regarde si il y a collision avec le vaisseau
+        for(QSharedPointer<Entity> &entity : _entitiesMap[Entity::SHIP])
         {
-            bool collide = ship.containsPoint(point, Qt::OddEvenFill);
-            if(collide == true && ship.id() != entity->id())
+            if(ship != entity.data() && entity->etat() == Entity::ALIVE)
             {
-                switch(entity->type())
+                if(checkCollision(*shipEntity.data(), *entity))
                 {
-                    //Si collision avec un vaisseau on enléve une vie à notre vaisseau passer en paramétre
-                    //Si plus de vie on l'ajoute à la liste de suppression
-                    case Entity::SHIP:
-                    {
-                        DEBUG("Collisison::detectShipCollision() collision avec un vaisseau", true);
-                        DEBUG("Collisison::detectShipCollision() x avant collision : " << ship.x(), true);
-                        ship.xy(QPoint(10,10)); // xy() NE VAUT PLUS RIEN
-                        DEBUG("Collisison::detectShipCollision() x apres collision" << ship.x(), true);
-                        if(!ship.changeLife(-1))
-                        {
-                            _entitiesToDelete.push_back(ship.id());
-                        }
-                        break;
-                    }
-
-                    //Si collision avec une mine on enléve une vie à notre vaisseau
-                    //On ajoute ensuite la mine à la liste de supression
-                    case Entity::MINE:
-                    {
-                        if(!ship.changeLife(-1))
-                        {
-                            _entitiesToDelete.push_back(entity->id());
-                        }
-                        _entitiesToDelete.push_back(entity->id());
-                        break;
-                    }
-                    default:
-                    {
-                        break;
-                    }
-                    DEBUG("Collision::InCollision:" << collide, false);
+                    ship->changeLife(-1);
+                    break;
                 }
-                break;
+            }
+        }
+
+        //Pour toutes les mines on regarde si il y a collision avec le vaisseau
+        for(QSharedPointer<Entity> &entity : _entitiesMap[Entity::MINE])
+        {
+            if(entity->etat() == Entity::ALIVE)
+            {
+                if(checkCollision(*shipEntity.data(), *entity))
+                {
+                    ship->changeLife(-1);
+                    break;
+                }
+            }
+        }
+
+        //Pour tous les tirs on regarde si il y a collision avec le vaisseau
+        for(QSharedPointer<Entity> &entity : _entitiesMap[Entity::SHOT])
+        {
+            Projectile *tir = dynamic_cast<Projectile*>(entity.data());
+            if(tir->ship() != *ship && entity->etat() == Entity::ALIVE)
+            {
+                if(checkCollision(*shipEntity.data(), *entity))
+                {
+                    DEBUG("Collision::detectShipCollision() collision vaisseau tir", false);
+                    if(ship->changeLife(-1))
+                    {
+                        //Add score to the ship who shot
+                        dynamic_cast<Projectile*>(entity.data())->ship().addScore(SCORE_SHIP);
+                        break;
+                    }
+                }
             }
         }
     }
 }
 
-
-void Collision::removeEntities(EntityHash &entitiesMap)
+void Collision::detectMineCollision(QSharedPointer<Entity> &mineEntity)
 {
-    for(int id: _entitiesToDelete)
+    Mine *mine = dynamic_cast<Mine*>(mineEntity.data());
+
+    for(QSharedPointer<Entity> &entity : _entitiesMap[Entity::SHOT])
     {
-        entitiesMap.remove(id);
+        //Si l'entité est un tir et qu'il y a collision on supprime les deux (tir & mine)
+        if(entity->etat() == Entity::ALIVE)
+        {
+            if(checkCollision(*mineEntity.data(), *entity))
+            {
+                //Add score to the ship who shot
+                if (mine->typeMine () != Mine::Exploded)
+                    dynamic_cast<Projectile*>(entity.data())->ship().addScore(SCORE_MINE);
+
+                mine->setEtatDead();
+                break;
+            }
+        }
     }
 }

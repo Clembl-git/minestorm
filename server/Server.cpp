@@ -6,10 +6,7 @@ Server::Server(quint16 port, QObject *parent)
       _address(QHostAddress::Any),
       _clientCount(0)
 {
-    DEBUG("Server::Server()", true);
-    _timer.setSingleShot(false);
-//    _timer.start(1000/ 20);
-//    QTimer::singleShot(3000, this, SLOT(broadcast()));
+    DEBUG("Server::Server()", false);
 }
 
 Server::~Server()
@@ -27,7 +24,13 @@ void Server::start()
         }
         else
         {
-            DEBUG("Server::start() : Listening on " << _port, true);
+            foreach (const QHostAddress &address, QNetworkInterface::allAddresses())
+            {
+                if (address.protocol() == QAbstractSocket::IPv4Protocol && address != QHostAddress(QHostAddress::LocalHost))
+                {
+                    DEBUG("Server::start() : Listening on" << address.toString() << ":" << _port, true);
+                }
+            }
         }
     }
 }
@@ -75,7 +78,7 @@ void Server::broadcast(const QString &message)
 
 void Server::unicast(qint32 idClient, const QString &message)
 {
-    DEBUG("Server::unicast() : Client" << idClient, true);
+    DEBUG("Server::unicast() : Client:" << idClient << " message:" << message, false);
 
     emit sendMessage(idClient, message);
 }

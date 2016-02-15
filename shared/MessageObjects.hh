@@ -7,10 +7,15 @@
 # include <QPolygon>
 
 # include <cassert>
+# include <cstdlib>
+# include <stdlib.h>
+# include <cstdio>
+# include <stdio.h>
 
 # include "MessageBase.hh"
 # include "Entity.hh"
 # include "Ship.hh"
+# include "Mine.hh"
 # include "Projectile.hh"
 # include "Element.hh"
 
@@ -18,10 +23,11 @@ class MessageObjects : public MessageBase
 {
 private:
     QSharedPointer<QVector<Element>>           _elements;
+//    char buf[sizeof(qint32)*8+1];
 
 public:
     MessageObjects(const QString &msg);
-    MessageObjects(const EntityHash &entities);
+    MessageObjects(const EntityList &entities);
     ~MessageObjects();
 
     const QSharedPointer<QVector<Element>>     &elements() const;
@@ -29,8 +35,11 @@ public:
 private:
     void                deserializeShip(QTextStream &stream);
     void                deserializeShot(QTextStream &stream);
+    void                deserializeMine(QTextStream &stream);
     void                serializeShip(const Ship &ship);
     void                serializeShot(const Projectile &shot);
+    void                serializeMine(const Mine &mine);
+//    void                put_nbr(char *buf, quint32 i);
 };
 
 /*

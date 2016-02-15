@@ -5,18 +5,21 @@
 
 # include "Entity.hh"
 # include "Ship.hh"
+# include "Projectile.hh"
+# include "Mine.hh"
 # include "Minestorm.hh"
 
 class Collision
 {
 private:
-    QVector<int>        _entitiesToDelete;
+    EntitiesHash          _entitiesMap;
 
 public:
-    Collision(EntityHash &entitiesMap);
-    void                detectCollision(EntityHash &entitiesMap);
-    void                detectShipCollision(Ship &ship, EntityHash &entitiesMap);
-    void                removeEntities(EntityHash &entitiesMap);
+    Collision(EntitiesHash &entitiesMap);
+
+    bool                checkCollision(Entity &entity1, Entity &entity2);
+    void                detectShipCollision(QSharedPointer<Entity> &shipEntity);
+    void                detectMineCollision(QSharedPointer<Entity> &mineEntity);
 };
 
 #endif // COLLISION_HH

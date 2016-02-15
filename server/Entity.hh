@@ -1,10 +1,10 @@
 #ifndef ENTITY_HH
 # define ENTITY_HH
 
-# define PI 3.141592654
+# define PI M_PI
 
 # include <QPoint>
-# include <QPolygon>
+# include <QPolygonF>
 # include <QVector>
 # include <QList>
 # include <QHash>
@@ -12,67 +12,76 @@
 # include <QTransform>
 
 # include <sstream>
+# include <cmath>
 
 # include "Minestorm.hh"
+
 using namespace std;
 
-class Entity : public QPolygon
+class Entity : public QPolygonF
 {
 public:
     enum Type
     {
         MINE = 0,
         SHIP = 1,
-        SHOT = 2
+        SHOT = 2,
+        ALL  = 3
     };
     enum Etat
     {
         DEAD = 0,
-        ALIVE = 1
+        ALIVE = 1,
+        INVINCIBLE
     };
 
 protected:
-    const Type              _type;
-    const qint32            _id;
-    QPoint                  _xy;
+    Type                    _type;
     QSize                   _size;
-    qint32                  _speed;
-    double                  _angle;
+    qreal                   _speed;
+    qint32                  _angle;
     Etat                    _etat;
+    qreal                   _vx;
+    qreal                   _vy;
+
 
 
 public:
-    Entity(qint32 id, Type type);
+    Entity(Type type);
     virtual ~Entity();
 
-    void                    addPoint(const QPoint &point);
-    virtual QPoint          center() const = 0;
+    void                    addPoint(const QPointF &point);
+    void                    addPoint(const qreal x, const qreal y);
+    virtual QPointF         center() const = 0;
 
     bool                    isMoving();
     void                    incrementSpeed();
-    void                    decrementSpeed();
-    void                    rightRotate();
-    void                    leftRotate();
-    void                    makeEntityMove();
-    double                  getRadian();
+    void                    decrementSpeed(qint32 value);
+    void                    rotate(qint32 angle);
+    virtual bool            makeEntityMove();
+    double                  getRadian(qint32 angle);
+    virtual void            setEtatDead();
+    bool                    isDead();
 
     Type                    type() const;
-    qint32                  id() const;
-    const QPoint            &xy() const;
-    void                    xy(const QPoint &value);
-    qint32                  x() const;
-    void                    x(qint32 value);
-    qint32                  y() const;
+    void                    type(Entity::Type type);
     const QSize             &size() const; // rename it
     void                    size(const QSize &value); // rename it
-    void                    y(qint32 value);
-    qint32                  speed() const;
-    void                    speed(qint32 value);
-    double                  angle() const;
-    void                    angle(double value);
+    qreal                   speed() const;
+    void                    speed(qreal value);
+    qint32                  angle() const;
+    void                    angle(qint32 value);
+    Etat                    etat() const;
+    void                    setEtat(const Etat &etat);
+    qreal                   vy() const;
+    void                    vy(qreal value);
+    qreal                   vx() const;
+    void                    vx(qreal value);
 };
 
 using EntityList = QList<QSharedPointer<Entity>>;
-using EntityHash = QHash<qint32, QSharedPointer<Entity>>;
+using EntitiesHash = QHash<Entity::Type, EntityList>;
+
+using EntityVector = QVector<QSharedPointer<Entity>>;
 
 #endif // ENTITY_HH

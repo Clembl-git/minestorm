@@ -12,10 +12,16 @@
 # include <QApplication>
 
 # include "Minestorm.hh"
-# include "MessageFactory.hpp"
+# include "MessageObjects.hh"
+# include "MessagePlayersInfos.hh"
+# include "MessagePseudo.hh"
+# include "MessageMouse.hh"
+# include "MessageKey.hh"
 # include "Client.hh"
-# include "Element.hh"
 # include "Images.hh"
+# include "Element.hh"
+# include "PlayersInfos.hh"
+# include "FpsCounter.hh"
 
 class Display : public QObject
 {
@@ -27,12 +33,16 @@ private:
     QSharedPointer<Client>              _client;
     QSharedPointer<QVector<Element>>    _elements;
     Images              _images;
+    PlayersInfos        _playersInfos;
+    FpsCounter          _fpsCounter;
+
 
 public:
     Display(const QSize &size, QObject *parent = nullptr);
 
     void                draw(QPainter &painter, QRect &size);
     void                startDisplay();
+    void                stopDisplay();
 
     // Events triggered from Gameboard
     void                mousePressed(qint32 x, qint32 y);
@@ -42,20 +52,21 @@ public:
 
     // Events triggered from Controller
     void                startNewGame();
-    void                joinGame(const QString &host);
+    void                joinGame(const QString &host, const QString &pseudo);
     void                exitGame();
 
+    // Key events for Display only
+    void                stopGame();
 
     const QSize         &size() const;
     bool                isRunning() const;
     const QVector<Element> &elements() const;
 
+private:
+    void                receiveObjects(const QSharedPointer<QVector<Element>> &elements);
 
 signals:
     void                changed();
-
-public slots:
-    void                receiveObjects(const QSharedPointer<QVector<Element>> &elements);
 
 private slots:
     void                messageDispatcher(qint32 socketFd, const QString &msg);

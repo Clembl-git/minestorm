@@ -3,33 +3,39 @@
 
 #include <QRect>
 #include "Entity.hh"
-#include "Ship.hh"
+
+class Ship;
 
 class Projectile : public Entity
 {
 public:
     //Constructors
-    Projectile(qint32, Ship&);
+    Projectile(Ship&);
 
-    //Getters & Setters
-    qint32 id() const;
-    void setId(const qint32 &id);
+    Ship        &ship() const;
 
-    Ship &ship() const;
-
-    QPolygon body() const;
-    void setBody(const QPolygon &body);
+    QPolygonF   body() const;
+    void        setBody(const QPolygonF &body);
 
     //Methods
-    void                init();
+    void        init();
 
 private:
-    qint32              _id;
-    Ship&               _ship;
+    Ship&       _ship;
+    bool        _playSound;
+    qint32      _tempo;
 
     // Entity interface
 public:
-    QPoint center() const override;
+    QPointF     center() const override;
+    bool        playSound() const;
+    void        playSound(bool value);
+
+    // Entity interface
+public:
+    bool        makeEntityMove() override;
 };
 
 #endif // PROJECTILE_HH
+
+#include "Ship.hh"

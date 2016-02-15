@@ -1,44 +1,55 @@
 #ifndef MINE_HH
 #define MINE_HH
 
-# include <QColor>
 # include <QPoint>
-# include <QBrush>
-# include <iostream>
+
+# include "Entity.hh"
 
 using namespace std;
 
-class Mine
+class Mine : public Entity
 {
 public:
+    /*   /!\ MUST MATCH Element::Type /!\   */
     enum TypeMine {
-        Small,
-        Medium,
-        Big
+        Small       = 0,
+        Medium      = 5,
+        Big         = 6,
+        Small_On    = 7,
+        Medium_On   = 8,
+        Big_On      = 9,
+        Exploded    = 12
     };
 
-    //Constructeur
-    Mine(TypeMine type, QPoint point);
+private:
+    TypeMine        _typeMine;
+    bool            _armed;
+    qint32          _size;
+    quint32         _delay;
+    quint32         _timer;
+    quint32         _timerExplo;
+//    quint32         _delayMove;
+//    quint32         _timerMove;
+
+public:
+    //Constructor
+    Mine(TypeMine typeMine, const QPointF &point);
+    virtual ~Mine();
+
+    void            activate();
+
+    //Entity Interface
+    QPointF         center() const override;
+    bool            makeEntityMove() override;
+    void            setEtatDead() override;
 
     //Getter & Setter
-    int size() const;
-    void setSize(int size);
+    qint32          size() const;
+    void            setSize(qint32 size);
+    TypeMine        typeMine() const;
+    bool            armed() const;
 
-    QColor color() const;
-    void setColor(QColor color);
 
-    QPoint point() const;
-    void setPoint(const QPoint &point);
-
-    Qt::BrushStyle brushStyle() const;
-    void setBrushStyle(const Qt::BrushStyle &brushStyle);
-
-private:
-    TypeMine _type;
-    QPoint _point;
-    int _size;
-    QColor _color;
-    Qt::BrushStyle _brushStyle;
 };
 
 #endif // MINE_HH

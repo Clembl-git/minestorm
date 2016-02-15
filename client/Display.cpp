@@ -1,6 +1,8 @@
 #include "Display.hh"
 #include "Ship.hh"
 
+
+
 Display::Display(const QSize &size, QObject *parent)
     : QObject(parent),
       _isRunning(false),
@@ -8,7 +10,7 @@ Display::Display(const QSize &size, QObject *parent)
       _client(QSharedPointer<Client>(new Client)),
       _elements(nullptr)
 {
-    DEBUG("Display::Display()", true);
+    DEBUG("Display::Display()", false);
 
     connect(_client.data(), SIGNAL(transfertMessage(qint32, QString)),
             this,           SLOT(messageDispatcher(qint32,QString)));
@@ -16,46 +18,30 @@ Display::Display(const QSize &size, QObject *parent)
 
 void Display::draw(QPainter &painter, QRect &size)
 {
+    (void) size;
+    QTransform t;
+    QTransform tInv;
     DEBUG("Display::draw() : " << _elements->size() << " elements to draw", false);
-    painter.fillRect(size, QColor(255,255,255));
 
+    /* Draw elements */
     if (_elements != nullptr)
     {
         for (const Element &element : *_elements)
         {
-            DEBUG("Display::draw() : " << element.type(), false);
-            switch (element.type())
-            {
-            case Element::MINE_S:
-            case Element::MINE_L:
-            case Element::MINE_M:
-                painter.drawImage(element.center(), _images.getImage(element.type()));
-                break;
-            case Element::SHIP_1:
-            case Element::SHIP_2:
-            case Element::SHIP_3:
-            case Element::SHIP_4:
-                painter.setPen(QColor(0, 0, 0));
-                painter.setBrush(QBrush(Qt::NoBrush));
-                painter.drawConvexPolygon(element.polygon());
-                painter.drawPoint(element.center());
-                painter.drawImage(element.imageCenter(), _images.getImage(element.type(), element.angle()));
-                break;
-            case Element::SHOT:
-                painter.setPen(QColor(255, 0, 51)); // RED
-                painter.setBrush(QBrush(Qt::NoBrush));
-                painter.drawConvexPolygon(element.polygon());
-                break;
-            }
-
-//            painter.drawConvexPolygon(object.polygon());
+            DEBUG("Display:draw() : element.type() = " << element.type(), false);
+            element.draw(painter, _images);
         }
     }
-}
 
-void Display::startDisplay()
-{
-    _isRunning = true;
+    /* Draw players infos*/
+    for (const QSharedPointer<PlayerInfos> &playerInfos : _playersInfos)
+    {
+        playerInfos->draw(painter, _images);
+    }
+
+    /* Draw FPS */
+    _fpsCounter.draw(painter, _images);
+    _fpsCounter.frameDraw();
 }
 
 void Display::messageDispatcher(qint32 socketFd, const QString &msg)
@@ -70,15 +56,15 @@ void Display::messageDispatcher(qint32 socketFd, const QString &msg)
     case MessageBase::OBJECTS:
     {
         MessageObjects      message(msg);
-
-        DEBUG("Client::MessageDispatcher() : Receive " << message.elements()->size() << " elements", false);
         receiveObjects(message.elements());
         break;
     }
-    case MessageBase::INFO_SPECTATOR:
+    case MessageBase::PLAYERS_INFOS:
     {
-        DEBUG("Client::MessageDispatcher() : Spectator mode", true);
-        _client->type(Client::SPECTATOR);
+        MessagePlayersInfos message(msg, &_playersInfos);
+
+        if (_isRunning)
+            emit changed();
         break;
     }
     default:
@@ -98,7 +84,6 @@ void Display::receiveObjects(const QSharedPointer<QVector<Element>> &elements)
     if (_isRunning)
         emit changed();
 }
-
 
 /* EVENTS */
 void Display::mousePressed(qint32 x, qint32 y)
@@ -124,6 +109,31 @@ void Display::keyPressed(qint32 key)
 void Display::keyReleased(qint32 key)
 {
     DEBUG("Display::keyReleased() : key =" << key, false);
+
+    /* Key echap is only for Client */
+    if (key == Qt::Key_Escape)
+    {
+        DEBUG("Display::keyPressed() : Echap", true);
+        stopGame();
+        return ;
+    }
+
+    MessageKey    message(MessageBase::KEY_RELEASE, key);
+
+    if (_isRunning)
+        _client->sendMessage(message.messageString());
+}
+
+void Display::startDisplay()
+{
+    _isRunning = true;
+    _fpsCounter.start();
+}
+
+void Display::stopDisplay()
+{
+    _isRunning = false;
+    _fpsCounter.stop();
 }
 
 void Display::startNewGame()
@@ -134,12 +144,22 @@ void Display::startNewGame()
     startDisplay();
 }
 
-void Display::joinGame(const QString &host)
+void Display::joinGame(const QString &host, const QString &pseudo)
 {
-    DEBUG("Display::joinGame() : Join" << host, true);
+    if (!_isRunning)
+    {
+        MessagePseudo       message(MessageBase::PSEUDO, pseudo);
 
-    _client->start(host);
-    startDisplay();
+        DEBUG("Display::joinGame() : Join" << host, false);
+        /* Start client (socket) */
+        _client->start(host);
+
+        /* Send pseudo to Server */
+        _client->sendMessage(message.messageString ());
+
+        /* Start display */
+        startDisplay();
+    }
 }
 
 void Display::exitGame()
@@ -149,6 +169,19 @@ void Display::exitGame()
     _client->stop();
 
     QApplication::quit();
+}
+
+void Display::stopGame()
+{
+    if (_isRunning)
+    {
+        _elements.clear();
+        _playersInfos.clear();
+
+        emit changed ();
+        _client->stop();
+        stopDisplay();
+    }
 }
 
 /* GETTERS/SETTERS */
